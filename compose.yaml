@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: offerlens
+      POSTGRES_USER: offerlens
+      POSTGRES_PASSWORD: offerlens
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U offerlens -d offerlens"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+    volumes:
+      - offerlens-db:/var/lib/postgresql/data
+      - ./drizzle/0000_initial.sql:/docker-entrypoint-initdb.d/0000_initial.sql:ro
+
+  app:
+    build: .
+    environment:
+      AI_PROVIDER: demo
+      DATABASE_URL: postgres://offerlens:offerlens@db:5432/offerlens
+      NEXT_TELEMETRY_DISABLED: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+volumes:
+  offerlens-db:

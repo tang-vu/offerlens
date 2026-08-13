@@ -1,0 +1,25 @@
+name: Feature request
+description: Propose a focused, evidence-compatible product improvement.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Candidate problem
+      description: What decision or workflow is difficult today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: truthfulness
+    attributes:
+      label: Evidence, privacy, fairness, and data implications
+      description: Identify sources, consent, protected-field, and uncertainty impacts.
+    validations:
+      required: true

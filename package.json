@@ -1,0 +1,60 @@
+{
+  "name": "offerlens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Explainable job-fit and compensation intelligence for candidates.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.2",
+    "jszip": "^3.10.1",
+    "mammoth": "1.12.1",
+    "next": "16.3.0",
+    "postgres": "3.4.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sanitize-html": "2.17.6",
+    "unpdf": "1.4.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.11.0",
+    "@playwright/test": "1.62.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "24.10.13",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@types/sanitize-html": "2.16.1",
+    "@vitest/coverage-v8": "4.1.10",
+    "eslint": "9.39.2",
+    "eslint-config-next": "16.3.0",
+    "jsdom": "28.1.0",
+    "postcss": "8.5.26",
+    "prettier": "3.8.2",
+    "prettier-plugin-tailwindcss": "0.7.2",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.20.6",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  }
+}
