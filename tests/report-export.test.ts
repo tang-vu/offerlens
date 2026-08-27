@@ -13,7 +13,9 @@ describe("portable report export", () => {
 
     expect(bundle.schemaVersion).toBe("offerlens-report/1");
     expect(bundle.reportSha256).toBe(reportSha256(report));
-    expect(bundle.evidenceCount).toBe(report.candidate.evidence.length + report.role.evidence.length);
+    expect(bundle.evidenceCount).toBe(
+      report.candidate.evidence.length + report.role.evidence.length,
+    );
     expect(verifyPortableReportExport(bundle)).toBe(true);
   });
 
