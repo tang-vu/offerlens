@@ -39,9 +39,18 @@ export function ReportLoader({ id }: { id: string }) {
     return (
       <div className="loading-state" role="status">
         <div className="loading-mark">OL</div>
-        <h1>Opening your report…</h1>
+        <h1>Opening your report...</h1>
         <p>Retrieving the retained structured analysis for this browser session.</p>
       </div>
     );
-  return <ReportView report={report} allowDelete />;
+  return (
+    <>
+      <div className="container no-print" style={{ paddingTop: "1rem", textAlign: "right" }}>
+        <a className="button secondary" href={`/api/reports/${id}/export`} download>
+          Export evidence JSON
+        </a>
+      </div>
+      <ReportView report={report} allowDelete />
+    </>
+  );
 }
