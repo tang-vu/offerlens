@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { Report } from "@/domain/schemas";
 import { ReportView } from "@/components/report-view";
+import type { Report } from "@/domain/schemas";
 
 export function ReportLoader({ id }: { id: string }) {
   const [report, setReport] = useState<Report>();
@@ -45,7 +45,7 @@ export function ReportLoader({ id }: { id: string }) {
     );
   return (
     <>
-      <div className="container no-print" style={{ paddingTop: "1rem", textAlign: "right" }}>
+      <div className="no-print container" style={{ paddingTop: "1rem", textAlign: "right" }}>
         <a className="button secondary" href={`/api/reports/${id}/export`} download>
           Export evidence JSON
         </a>
