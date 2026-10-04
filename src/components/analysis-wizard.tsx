@@ -32,11 +32,25 @@ export function AnalysisWizard() {
   const [period, setPeriod] = useState<"annual" | "monthly">("annual");
   const [consent, setConsent] = useState(false);
   const [extraction, setExtraction] = useState<ExtractionResult>();
-  const [busy, setBusy] = useState<"file" | "url" | "extract" | "analyze">();
+  const [busy, setBusy] = useState<"extract" | "analyze">();
+  const [parsingFile, setParsingFile] = useState(false);
+  const [importingJob, setImportingJob] = useState(false);
   const [error, setError] = useState("");
   const [fileLabel, setFileLabel] = useState("");
   const errorRef = useRef<HTMLDivElement>(null);
   const wizardRef = useRef<HTMLDivElement>(null);
+  const fileRequest = useRef<AbortController | undefined>(undefined);
+  const jobRequest = useRef<AbortController | undefined>(undefined);
+
+  useEffect(
+    () => () => {
+      fileRequest.current?.abort();
+      jobRequest.current?.abort();
+      fileRequest.current = undefined;
+      jobRequest.current = undefined;
+    },
+    [],
+  );
 
   useEffect(() => {
     wizardRef.current?.scrollIntoView({ behavior: "instant", block: "start" });
@@ -58,49 +72,82 @@ export function AnalysisWizard() {
     requestAnimationFrame(() => errorRef.current?.focus());
   }
 
+  function cancelFileRequest() {
+    fileRequest.current?.abort();
+    fileRequest.current = undefined;
+    setParsingFile(false);
+  }
+
+  function cancelJobRequest() {
+    jobRequest.current?.abort();
+    jobRequest.current = undefined;
+    setImportingJob(false);
+  }
+
   async function parseFile(file?: File) {
     if (!file) return;
-    setBusy("file");
+    fileRequest.current?.abort();
+    const request = new AbortController();
+    fileRequest.current = request;
+    setParsingFile(true);
     setError("");
     setFileLabel(file.name);
     const form = new FormData();
     form.set("file", file);
     try {
-      const response = await fetch("/api/resume/parse", { method: "POST", body: form });
+      const response = await fetch("/api/resume/parse", {
+        method: "POST",
+        body: form,
+        signal: request.signal,
+      });
       const body = (await response.json()) as {
         text?: string;
         error?: string;
         truncated?: boolean;
       };
+      if (fileRequest.current !== request) return;
       if (!response.ok || !body.text)
         throw new Error(body.error ?? "The file could not be parsed.");
       setResumeText(body.text);
       if (body.truncated)
         fail("The extracted text reached the 60,000-character limit. Review the pasted result.");
     } catch (caught) {
-      fail(caught instanceof Error ? caught.message : "The file could not be parsed.");
+      if (fileRequest.current === request)
+        fail(caught instanceof Error ? caught.message : "The file could not be parsed.");
     } finally {
-      setBusy(undefined);
+      if (fileRequest.current === request) {
+        fileRequest.current = undefined;
+        setParsingFile(false);
+      }
     }
   }
 
   async function importJob() {
-    setBusy("url");
+    jobRequest.current?.abort();
+    const request = new AbortController();
+    jobRequest.current = request;
+    setImportingJob(true);
     setError("");
     try {
       const body = await jsonRequest<{ text: string }>("/api/job/import", {
         method: "POST",
         body: JSON.stringify({ url: jobUrl }),
+        signal: request.signal,
       });
+      if (jobRequest.current !== request) return;
       setJobText(body.text);
     } catch (caught) {
-      fail(
-        caught instanceof Error
-          ? caught.message
-          : "Import failed. Paste the job description instead.",
-      );
+      if (jobRequest.current === request)
+        fail(
+          caught instanceof Error
+            ? caught.message
+            : "Import failed. Paste the job description instead.",
+        );
     } finally {
-      setBusy(undefined);
+      if (jobRequest.current === request) {
+        jobRequest.current = undefined;
+        setImportingJob(false);
+      }
     }
   }
 
@@ -206,7 +253,7 @@ export function AnalysisWizard() {
         </div>
       </aside>
 
-      <section className="wizard-main" aria-busy={Boolean(busy)}>
+      <section className="wizard-main" aria-busy={Boolean(busy) || parsingFile || importingJob}>
         {error && (
           <div className="error" role="alert" tabIndex={-1} ref={errorRef}>
             {error}
@@ -231,7 +278,11 @@ export function AnalysisWizard() {
                 id="resume"
                 className="textarea source-textarea"
                 value={resumeText}
-                onChange={(event) => setResumeText(event.target.value)}
+                onChange={(event) => {
+                  cancelFileRequest();
+                  setFileLabel("");
+                  setResumeText(event.target.value);
+                }}
                 maxLength={60_000}
                 placeholder="Paste your résumé text here…"
                 aria-describedby="resume-help"
@@ -243,14 +294,17 @@ export function AnalysisWizard() {
             </div>
             <div className="upload-row">
               <label className="button secondary" htmlFor="resume-file">
-                <UploadIcon /> {busy === "file" ? "Parsing securely…" : "Choose PDF or DOCX"}
+                <UploadIcon /> {parsingFile ? "Parsing securely…" : "Choose PDF or DOCX"}
               </label>
               <input
                 id="resume-file"
                 className="visually-hidden"
                 type="file"
                 accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={(event) => void parseFile(event.target.files?.[0])}
+                onChange={(event) => {
+                  void parseFile(event.target.files?.[0]);
+                  event.target.value = "";
+                }}
               />
               {fileLabel && <span className="fine">{fileLabel}</span>}
               <span className="fine">5 MB · 40 PDF pages max</span>
@@ -268,17 +322,20 @@ export function AnalysisWizard() {
                   className="input"
                   type="url"
                   value={jobUrl}
-                  onChange={(event) => setJobUrl(event.target.value)}
+                  onChange={(event) => {
+                    cancelJobRequest();
+                    setJobUrl(event.target.value);
+                  }}
                   placeholder="https://company.example/jobs/role"
                 />
               </div>
               <button
                 className="button secondary"
                 type="button"
-                disabled={!jobUrl || busy === "url"}
+                disabled={!jobUrl || importingJob}
                 onClick={() => void importJob()}
               >
-                {busy === "url" ? "Checking…" : "Import"}
+                {importingJob ? "Checking…" : "Import"}
               </button>
             </div>
             <div className="field">
@@ -289,7 +346,10 @@ export function AnalysisWizard() {
                 id="job-text"
                 className="textarea source-textarea"
                 value={jobText}
-                onChange={(event) => setJobText(event.target.value)}
+                onChange={(event) => {
+                  cancelJobRequest();
+                  setJobText(event.target.value);
+                }}
                 maxLength={60_000}
                 placeholder="Paste the complete job description here…"
                 aria-describedby="job-help"
@@ -324,7 +384,7 @@ export function AnalysisWizard() {
               <button
                 className="button"
                 type="button"
-                disabled={!canContinueSources}
+                disabled={!canContinueSources || parsingFile || importingJob}
                 onClick={() => {
                   setError("");
                   setStep(1);
